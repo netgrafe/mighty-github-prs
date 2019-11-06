@@ -8,18 +8,25 @@
 		if (fileSelector) {
 			fileSelector.remove()
 		}
+
+		const buttonContainer = document.getElementById('mighty-action-buttons');
+
+		if (buttonContainer) {
+			buttonContainer.remove();
+		}
 	}
 
 	function initializeMightyDiffViewer() {
 		document.body.classList.add('full-width');
 		document.body.classList.add('mighty-viewer-active');
-		
-		const fileDetails = Array.from(document.querySelectorAll('.file-header[data-anchor^="diff-"]')).map(element => { 
+
+		const fileDetails = Array.from(document.querySelectorAll('.file-header[data-anchor^="diff-"]')).map(element => {
 			return {
-				element,	
+				element,
 				anchor: element.dataset.anchor,
 				filePath: element.dataset.path,
-				fileType: element.dataset.fileType
+				fileType: element.dataset.fileType,
+				deleted: element.dataset.fileDeleted === 'true'
 			}
 		});
 
@@ -58,15 +65,15 @@
 
 	                    delete parent[currentKey];
 
-	                    shrinkTree(parent[mergedKey], parent, mergedKey);    
-	                }              
+	                    shrinkTree(parent[mergedKey], parent, mergedKey);
+	                }
 	            } else {
 	                props.forEach(prop => {
 	                    shrinkTree(root[prop], root, prop);
 	                })
-	            }    
+	            }
 	        }
-	        
+
 	    }
 
 	    const fileTree = {};
@@ -98,7 +105,7 @@
 
 						children.push(
 							`<li>
-								<span class="folder-name">${key}/</span> 
+								<span class="folder-name">${key}/</span>
 								${subHtml}
 							</li>`);
 					} else {
@@ -106,21 +113,21 @@
 
 						files.sort((a, b) => a.filePath.localeCompare(b.filePath));
 
-					    files.forEach(fileDetails => 
-							children.push(`<li class="file-name ${fileDetails.fileType.replace('.', '')}">							
+					    files.forEach(fileDetails =>
+							children.push(`<li class="file-name ${fileDetails.deleted ? 'deleted' : ''} ${fileDetails.fileType.replace('.', '')}">
 								<a class="file-link" href="#${fileDetails.anchor}" data-anchor="${fileDetails.anchor}">
 									${fileDetails.filePath.substr(fileDetails.filePath.lastIndexOf('/') + 1)}
 								</a>
 							</li>`)
 						);
 					}
-				});	
+				});
 
 				return `<ul>${children.join('')}</ul>`;
 			} else {
 				return '';
 			}
-			
+
 		}
 
 		const fileTreeHtmlString = createHtmlOfProperties(fileTree);
@@ -128,7 +135,7 @@
 		newDiv.setAttribute('id', 'mighty-file-selector');
 		newDiv.insertAdjacentHTML('afterbegin', fileTreeHtmlString);
 
-		
+
 		document.body.append(newDiv);
 
 		document.getElementById('mighty-file-selector').addEventListener('click', (event) => {
@@ -142,9 +149,42 @@
 					} else {
 						element.parentNode.classList.add('mighty-hidden');
 					}
-				})	
+				})
 			}
-		})		
+		})
+
+
+		const buttonContainer = document.createElement('div');
+		buttonContainer.setAttribute('id', 'mighty-action-buttons');
+
+		buttonContainer.insertAdjacentHTML('beforeend', `
+			<button type="button" id="mighty-needs-work-button" class="ml-2 btn btn-large btn-danger">Needs Work</button>
+			<button type="button" id="mighty-approve-button" class="ml-1 btn btn-large btn-primary">Holy Approve</button>
+		`);
+
+		document.querySelector('.gh-header-actions').insertAdjacentElement('beforeend', buttonContainer);
+
+		document.getElementById('mighty-approve-button').addEventListener('click', () => {
+			const reviewForm = document.querySelector('.pull-request-review-menu form');
+
+			const approveOption = reviewForm.querySelector('input[type="radio"][value="approve"]');
+			approveOption.click();
+
+			reviewForm.submit();
+		});
+
+		document.getElementById('mighty-needs-work-button').addEventListener('click', () => {
+			const reviewForm = document.querySelector('.pull-request-review-menu form');
+
+			const reviewCommentField = document.getElementById('pull_request_review_body');
+
+			reviewCommentField.value = 'Please fix review items.';
+
+			const needsWorkOption = reviewForm.querySelector('input[type="radio"][value="reject"]');
+			needsWorkOption.click();
+
+			reviewForm.submit();
+		})
 	}
 
 	function waitForTotalDiffLoad(callback) {
@@ -158,53 +198,30 @@
 			if (filesNode && numberOfFileHeaders === numberOfChangedFiles) {
 				clearInterval(interval);
 				callback();
-			}							
-		}, 500);	
+			}
+		}, 500);
 	}
 
 	function init() {
 		if (window.location.pathname.endsWith('/files')) {
 			waitForTotalDiffLoad(initializeMightyDiffViewer);
-		} 
+		}
 
-		document.addEventListener('click', e => {		
+		document.addEventListener('click', e => {
 			const path = window.location.pathname;
 
 			if (path.includes('pull') && path.endsWith('/files')) {
 				const fileSelector = document.getElementById('mighty-file-selector');
 
 				if (!fileSelector) {
-					waitForTotalDiffLoad(initializeMightyDiffViewer)					
-				}				
+					waitForTotalDiffLoad(initializeMightyDiffViewer)
+				}
 			} else {
 				destroyMightyDiffViewer();
 			}
 		});
-/*
-		document.addEventListener('click', e => {						
-		    if (e.target.closest('.tabnav-tab')) {
-
-		       	const element = e.target.closest('.tabnav-tab');
-
-				if (element.href && element.href.endsWith('/files')) {
-					const interval = setInterval(() => {
-						const filesNode = document.getElementById('files');
-
-						if (filesNode) {
-							clearInterval(interval);
-							initializeMightyDiffViewer();
-						}							
-					}, 500);					
-				} else {
-					destroyMightyDiffViewer();
-				}
-		   }
-		});
-*/
-		
-
-	}	
+	}
 
 	init();
-	
+
 })();

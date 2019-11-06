@@ -7,9 +7,13 @@
 	display: none;
 }
 
+.mighty-viewer-active .js-flash-container,
 .mighty-viewer-active.full-width #files_bucket {
 	margin-left: 470px;
 }
+
+.mighty-viewer-active .gh-header-actions {
+	min-width: 310px;
 }
 
 .mighty-viewer-active  #files_bucket {
@@ -80,13 +84,21 @@
 	content: "";
 	width: 1rem;
 	height: 1rem;
-	
+
 	background-size: contain;
 	display: block;
 	position: absolute;
 	left: -1.25rem;
 	top: 50%;
 	transform: translateY(-50%);
+}
+
+.file-name.deleted {
+	text-decoration: line-through;
+}
+
+.file-name.deleted a {
+	color: #d84535;
 }
 
 /* Encoded by https://yoksel.github.io/url-encoder/ */
