@@ -1,0 +1,11 @@
+ {
+    "name": "Mighty GitHub",
+    "version": "1.0",
+    "description": "Restyle Pull Request screen.",
+    "manifest_version": 2,
+    "content_scripts": [{
+    	"matches": ["https://github.expedia.biz/*"],
+	     "css": ["pr-optimizer.css"],
+	     "js": ["pr-optimizer.js"]
+    }]
+  }
