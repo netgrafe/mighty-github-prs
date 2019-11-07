@@ -33,8 +33,8 @@
 	display: block;
 	position: fixed;
     top: 80px;
-    left: 0;
-    bottom: 0;
+    left: 12px;
+    bottom: 12px;
     width: 450px;
     overflow: auto;
     background: white;
@@ -45,7 +45,7 @@
 }
 
 .mighty-viewer-active #mighty-file-selector ul {
-	padding-left: 0.75rem;
+	padding-left: 1.25rem;
 }
 
 .mighty-viewer-active #mighty-file-selector li {
@@ -56,7 +56,8 @@
 	font-weight: bold;
 }
 
-.mighty-viewer-active #mighty-file-selector li a.mighty-seen-already {
+.mighty-viewer-active #mighty-file-selector .mighty-seen-already,
+.mighty-viewer-active #mighty-file-selector .mighty-seen-already a {
 	font-weight: normal;
 	opacity: 0.9;
 }
@@ -67,10 +68,17 @@
 	position: relative;
 }
 
-.file-name {
-	padding: 2px 4px;
+.folder-name {
+	font-weight: 600;
 }
 
+.folder-name,
+.file-name {
+	padding: 2px 4px;
+	cursor: pointer;
+}
+
+.folder-name:hover,
 .file-name:hover {
 	background-color: #f4f4f4;
 }

@@ -3,8 +3,23 @@
     "version": "1.0",
     "description": "Restyle Pull Request screen.",
     "manifest_version": 2,
+    "permissions": [
+      "contextMenus",
+      "*://*.github.com/*"
+    ],
+    "optional_permissions": [
+      "http://*/*",
+      "https://*/*"
+    ],
+    "background": {
+      "scripts": [
+        "webext-dynamic-content-scripts.js",
+        "webext-domain-permission-toggle.js",
+        "background.js"
+      ]
+    },
     "content_scripts": [{
-    	"matches": ["https://github.expedia.biz/*"],
+    	 "matches": ["https://*.github.com/*"] ,
 	     "css": ["pr-optimizer.css"],
 	     "js": ["pr-optimizer.js"]
     }]

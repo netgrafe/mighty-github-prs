@@ -114,7 +114,7 @@
 						files.sort((a, b) => a.filePath.localeCompare(b.filePath));
 
 					    files.forEach(fileDetails =>
-							children.push(`<li class="file-name ${fileDetails.deleted ? 'deleted' : ''} ${fileDetails.fileType.replace('.', '')}">
+							children.push(`<li class="file-name ${fileDetails.deleted ? 'deleted' : ''} ${fileDetails.fileType.replace('.', '')}" data-anchor="${fileDetails.anchor}">
 								<a class="file-link" href="#${fileDetails.anchor}" data-anchor="${fileDetails.anchor}">
 									${fileDetails.filePath.substr(fileDetails.filePath.lastIndexOf('/') + 1)}
 								</a>
@@ -130,7 +130,7 @@
 
 		}
 
-		const fileTreeHtmlString = createHtmlOfProperties(fileTree);
+		const fileTreeHtmlString = '<h3>Mighty file tree</h3>' + createHtmlOfProperties(fileTree);
 
 		newDiv.setAttribute('id', 'mighty-file-selector');
 		newDiv.insertAdjacentHTML('afterbegin', fileTreeHtmlString);
@@ -139,9 +139,9 @@
 		document.body.append(newDiv);
 
 		document.getElementById('mighty-file-selector').addEventListener('click', (event) => {
-			if (event.target.tagName === 'A') {
+			if (event.target.dataset && event.target.dataset.anchor) {
 				const selectedAnchor = event.target.dataset.anchor;
-				event.target.classList.add('mighty-seen-already')
+				event.target.closest('.file-name').classList.add('mighty-seen-already')
 
 				fileDetails.forEach(({ element, anchor }) => {
 					if (anchor === selectedAnchor) {
@@ -150,6 +150,11 @@
 						element.parentNode.classList.add('mighty-hidden');
 					}
 				})
+			} else if (event.target.classList.contains('folder-name')) {
+				const folderNameNode = event.target;
+				const ulListOfFolder = folderNameNode.nextElementSibling;
+
+				ulListOfFolder.classList.toggle('mighty-hidden');
 			}
 		})
 
