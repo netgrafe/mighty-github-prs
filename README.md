@@ -10,7 +10,10 @@ Install it from Google Chrome Web Store:
 
 ## Main features
 
-- **works on corporate enterprise domains**, you just need to enable in the context menu of the extension in Chrome toolbar
+![Screen example](./design-elements/mighty-github-screen-overview.png)
+
+- **works on corporate enterprise domains**, you just need to enable in the context menu of the extension in Chrome toolbar:
+  - ![Tile Icone](./design-elements/mighty-github-enterprise-domain.png)
 - file tree on the left hand side
   - **folders are collapsible**
   - **folders are as concise as possible** (if a folder containing on single folder it is merged with parent in visualization)
@@ -21,4 +24,4 @@ Install it from Google Chrome Web Store:
     - 'Need work' button automatically adds a generic *'Please fix review items'* comment.
 - **clutter is reduced** - elements on the top of the page is eliminated i nthe file navigation view to eliminate visual noise
 
-![Screen example](./design-elements/mighty-github-screen-overview.png)
+
