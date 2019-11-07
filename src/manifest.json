@@ -3,6 +3,11 @@
     "version": "1.0.0",
     "description": "Restyle Pull Request screen for easier navigation and more focused review sessions.",
     "manifest_version": 2,
+    "icons": {
+      "48": "mighty-github-icon-48x48.png",
+      "128": "mighty-github-icon-128x128.png",
+      "192": "mighty-github-icon-192x192.png"
+    },
     "permissions": [
       "contextMenus",
       "*://*.github.com/*"
