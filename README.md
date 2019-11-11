@@ -8,6 +8,8 @@ Chrome Extension to restyle Pull Request screen for easier navigation and more f
 
 Install it from Google Chrome Web Store:
 
+https://chrome.google.com/webstore/detail/mighty-github-prs/hopnfcjjghjpkfdiffabbpcpnhcpkceg
+
 ## Main features
 
 ![Screen example](./design-elements/mighty-github-screen-overview.png)
