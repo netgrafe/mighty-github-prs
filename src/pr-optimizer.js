@@ -1,230 +1,302 @@
 (() => {
-	function destroyMightyDiffViewer() {
-		document.body.classList.remove('mighty-viewer-active');
-		document.body.classList.remove('full-width');
+	const SELECTOR_FILE_HEADERS = '.file-header[data-anchor^="diff-"]';
 
-		const fileSelector = document.getElementById('mighty-file-selector')
+	const CLASS_ACTIVE 		= 'mighty-viewer-active';
+	const CLASS_FULL_WIDTH 	= 'full-width';
+
+	const ID_ACTION_BUTTON_CONTAINER 	= 'mighty-action-buttons';
+	const ID_NEEDS_WORK_BUTTON 			= 'mighty-needs-work-button';
+	const ID_APPROVE_BUTTON				= 'mighty-approve-button';
+
+	const ID_FILE_SELECTOR 				= 'mighty-file-selector'
+
+	const state = {
+		isFileTreeFullyRendered: false
+	};
+
+	let observer;
+
+	function destroyMightyDiffViewer() {
+		if (document.body.classList.contains(CLASS_ACTIVE)) {
+			document.body.classList.remove(CLASS_ACTIVE);
+			document.body.classList.remove(CLASS_FULL_WIDTH);
+		}
+
+		const fileSelector = document.getElementById(ID_FILE_SELECTOR)
 
 		if (fileSelector) {
 			fileSelector.remove()
 		}
 
-		const buttonContainer = document.getElementById('mighty-action-buttons');
+		const buttonContainer = document.getElementById(ID_ACTION_BUTTON_CONTAINER);
 
 		if (buttonContainer) {
 			buttonContainer.remove();
 		}
+
+		state.isFileTreeFullyRendered = false;
 	}
 
-	function initializeMightyDiffViewer() {
-		document.body.classList.add('full-width');
-		document.body.classList.add('mighty-viewer-active');
+	// this function is building up a tree exactly based on the file path
+	// this method has side effects on the parameters
+	function addToTree(root, parts, fullFileDetails) {
+		const nextPart = parts.shift();
 
-		const fileDetails = Array.from(document.querySelectorAll('.file-header[data-anchor^="diff-"]')).map(element => {
-			return {
-				element,
-				anchor: element.dataset.anchor,
-				filePath: element.dataset.path,
-				fileType: element.dataset.fileType,
-				deleted: element.dataset.fileDeleted === 'true'
+		if (nextPart.includes('.')) {
+			// it's a file
+			if (root.FILES) {
+				root.FILES.push(fullFileDetails)
+			} else {
+				root.FILES = [ fullFileDetails ];
 			}
-		});
+		} else {
+			root[nextPart] = root[nextPart] || {};
 
-		// this function is building up a tree exactly based on the file path
-		// this method has side effects on the parameters
-		function addToTree(root, parts, fullFileDetails) {
-	        const nextPart = parts.shift();
+			// shift already moved the first element
+			addToTree(root[nextPart], parts, fullFileDetails);
+		}
+	}
 
-	        if (nextPart.includes('.')) {
-	            // it's a file
-	            if (root.FILES) {
-	                root.FILES.push(fullFileDetails)
-	            } else {
-	                root.FILES = [ fullFileDetails ];
-	            }
-	        } else {
-	            root[nextPart] = root[nextPart] || {};
+	// this function is trying to compress the file tree to avoid a lot of folder openings which containing one single folder to open again and again
+	// this method has side effects on the parameters
+	function shrinkTree(root, parent, currentKey) {
+		if (typeof root === 'object' && !Array.isArray(root)) {
+			const props = Object.keys(root);
 
-	            // shift already moved the first element
-	            addToTree(root[nextPart], parts, fullFileDetails);
-	        }
-	    }
+			if (props.length === 1) {
+				const singlePropName = props[0];
 
-	    // this function is trying to compress the file tree to avoid a lot of folder openings which containing one single folder to open again and again
-	    // this method has side effects on the parameters
-	    function shrinkTree(root, parent, currentKey) {
-	        if (typeof root === 'object' && !Array.isArray(root)) {
-	            const props = Object.keys(root);
+				if (singlePropName !== 'FILES') {
+					const mergedKey = `${currentKey}/${singlePropName}`;
+					parent[mergedKey] = root[singlePropName];
 
-	            if (props.length === 1) {
-	                const singlePropName = props[0];
+					delete parent[currentKey];
 
-	                if (singlePropName !== 'FILES') {
-	                    const mergedKey = `${currentKey}/${singlePropName}`;
-	                    parent[mergedKey] = root[singlePropName];
+					shrinkTree(parent[mergedKey], parent, mergedKey);
+				}
+			} else {
+				props.forEach(prop => {
+					shrinkTree(root[prop], root, prop);
+				})
+			}
+		}
+	}
 
-	                    delete parent[currentKey];
+	function createHtmlOfProperties(subtree) {
+		const keys = Object.keys(subtree);
 
-	                    shrinkTree(parent[mergedKey], parent, mergedKey);
-	                }
-	            } else {
-	                props.forEach(prop => {
-	                    shrinkTree(root[prop], root, prop);
-	                })
-	            }
-	        }
+		// keys.sort((a, b) => a.localeCompare(b));
+		keys.sort();
 
-	    }
+		if (keys.length) {
+			const children = [];
 
-	    const fileTree = {};
+			keys.forEach(key => {
+				if (key !== 'FILES') {
+					const subHtml = createHtmlOfProperties(subtree[key]);
 
-	    fileDetails.forEach(fileDetails => {
-	        const parts = fileDetails.filePath.split('/');
+					children.push(
+						`<li>
+							<span class="folder-name">${key}/</span>
+							${subHtml}
+						</li>`);
+				} else {
+					const files = subtree[key];
 
-	        addToTree(fileTree, parts, fileDetails);
-	    })
+					files.sort((a, b) => a.filePath.localeCompare(b.filePath));
 
-	    Object.keys(fileTree).forEach(key => {
-	        shrinkTree(fileTree[key], fileTree, key);
-	    });
+					files.forEach(fileDetails =>
+						children.push(`<li class="file-name ${fileDetails.deleted ? 'deleted' : ''} ${fileDetails.fileType.replace('.', '')}" data-anchor="${fileDetails.anchor}">
+							<a class="file-link" href="#" data-anchor="${fileDetails.anchor}">
+								${fileDetails.filePath.substr(fileDetails.filePath.lastIndexOf('/') + 1)}
+							</a>
+						</li>`)
+					);
+				}
+			});
 
-		const newDiv = document.createElement('div');
+			return `<ul>${children.join('')}</ul>`;
+		} else {
+			return '';
+		}
 
-		function createHtmlOfProperties(subtree) {
-			const keys = Object.keys(subtree);
+	}
 
-			// keys.sort((a, b) => a.localeCompare(b));
-			keys.sort();
+	function selectReviewOptionAndSubmit(optionValue) {
+		const reviewForm = document.querySelector('.pull-request-review-menu form');
 
-			if (keys.length) {
-				const children = [];
+		const approveOption = reviewForm.querySelector(`input[type="radio"][value="${optionValue}"]`);
 
-				keys.forEach(key => {
-					if (key !== 'FILES') {
-						const subHtml = createHtmlOfProperties(subtree[key]);
+		approveOption.click();
 
-						children.push(
-							`<li>
-								<span class="folder-name">${key}/</span>
-								${subHtml}
-							</li>`);
-					} else {
-						const files = subtree[key];
+		reviewForm.submit();
+	}
 
-						files.sort((a, b) => a.filePath.localeCompare(b.filePath));
+	function renderActionButtons() {
+		const existingButtonContainer = document.getElementById(ID_ACTION_BUTTON_CONTAINER);
 
-					    files.forEach(fileDetails =>
-							children.push(`<li class="file-name ${fileDetails.deleted ? 'deleted' : ''} ${fileDetails.fileType.replace('.', '')}" data-anchor="${fileDetails.anchor}">
-								<a class="file-link" href="#${fileDetails.anchor}" data-anchor="${fileDetails.anchor}">
-									${fileDetails.filePath.substr(fileDetails.filePath.lastIndexOf('/') + 1)}
-								</a>
-							</li>`)
-						);
+		if (!existingButtonContainer) {
+			const buttonContainer = document.createElement('div');
+			buttonContainer.setAttribute('id', ID_ACTION_BUTTON_CONTAINER);
+
+			buttonContainer.insertAdjacentHTML('beforeend', `
+				<button type="button" id="${ID_NEEDS_WORK_BUTTON}" class="ml-2 btn btn-large btn-danger">Needs Work</button>
+				<button type="button" id="${ID_APPROVE_BUTTON}" class="ml-1 btn btn-large btn-primary">Holy Approve</button>
+			`);
+
+			document.querySelector('.gh-header-actions').insertAdjacentElement('beforeend', buttonContainer);
+
+			document.getElementById(ID_APPROVE_BUTTON).addEventListener('click', () => {
+				selectReviewOptionAndSubmit('approve');
+			});
+
+			document.getElementById(ID_NEEDS_WORK_BUTTON).addEventListener('click', () => {
+				const reviewCommentField = document.getElementById('pull_request_review_body');
+
+				reviewCommentField.value = 'Please fix review items.';
+
+				selectReviewOptionAndSubmit('reject');
+			});
+		}
+	}
+
+	function renderFileTree() {
+		const filesNode = document.getElementById('files');
+		const filesTabCounter = document.getElementById('files_tab_counter');
+
+		const numberOfChangedFiles = filesTabCounter ? parseInt(document.getElementById('files_tab_counter').textContent.trim()) : null;
+		const numberOfFileHeaders = document.querySelectorAll(SELECTOR_FILE_HEADERS).length;
+
+		if (filesNode && filesTabCounter && numberOfChangedFiles && numberOfFileHeaders && !state.isFileTreeFullyRendered) {
+			const existingFileSelector = document.getElementById(ID_FILE_SELECTOR);
+
+			if (existingFileSelector) {
+				existingFileSelector.remove();
+			}
+
+			const newFileSelector = document.createElement('div');
+			newFileSelector.setAttribute('id', ID_FILE_SELECTOR);
+
+			let fileTreeHtmlString = `
+				<header class="mighty-file-selector-header">
+					<h3>Mighty file tree</h3>
+				</header>`;
+
+			let fileDetails = [];
+
+			if (numberOfChangedFiles === numberOfFileHeaders) {
+				fileDetails = Array.from(document.querySelectorAll(SELECTOR_FILE_HEADERS)).map(element => {
+					return {
+						element,
+						anchor: element.dataset.anchor,
+						filePath: element.dataset.path,
+						fileType: element.dataset.fileType,
+						deleted: element.dataset.fileDeleted === 'true'
 					}
 				});
 
-				return `<ul>${children.join('')}</ul>`;
+				const fileTree = {};
+
+				fileDetails.forEach(fileDetails => {
+					const parts = fileDetails.filePath.split('/');
+
+					addToTree(fileTree, parts, fileDetails);
+				})
+
+				Object.keys(fileTree).forEach(key => {
+					shrinkTree(fileTree[key], fileTree, key);
+				});
+
+				fileTreeHtmlString += createHtmlOfProperties(fileTree);
+
+				state.isFileTreeFullyRendered = true;
 			} else {
-				return '';
+				fileTreeHtmlString += `
+					<div id="mighty-file-selector-loader-message">
+						<div id="mighty-file-loading-progress-bar" style="width: ${numberOfFileHeaders / numberOfChangedFiles * 100}%;"></div>
+						<p>${numberOfFileHeaders} of ${numberOfChangedFiles} file diffs has been loaded...</p>
+					</div>
+				`
+
+				state.isFileTreeFullyRendered = false;
+			}
+
+			newFileSelector.insertAdjacentHTML('afterbegin', fileTreeHtmlString);
+
+			document.body.append(newFileSelector);
+
+			if (numberOfChangedFiles === numberOfFileHeaders) {
+				document.getElementById(ID_FILE_SELECTOR).addEventListener('click', (event) => {
+					if (event.target.dataset && event.target.dataset.anchor) {
+						const selectedAnchor = event.target.dataset.anchor;
+						event.target.closest('.file-name').classList.add('mighty-seen-already')
+
+						fileDetails.forEach(({ element, anchor }) => {
+							if (anchor === selectedAnchor) {
+								element.parentNode.classList.remove('mighty-hidden');
+							} else {
+								element.parentNode.classList.add('mighty-hidden');
+							}
+						})
+					} else if (event.target.classList.contains('folder-name')) {
+						const folderNameNode = event.target;
+						const ulListOfFolder = folderNameNode.nextElementSibling;
+
+						ulListOfFolder.classList.toggle('mighty-hidden');
+					}
+				})
 			}
 
 		}
-
-		const fileTreeHtmlString = '<h3>Mighty file tree</h3>' + createHtmlOfProperties(fileTree);
-
-		newDiv.setAttribute('id', 'mighty-file-selector');
-		newDiv.insertAdjacentHTML('afterbegin', fileTreeHtmlString);
-
-
-		document.body.append(newDiv);
-
-		document.getElementById('mighty-file-selector').addEventListener('click', (event) => {
-			if (event.target.dataset && event.target.dataset.anchor) {
-				const selectedAnchor = event.target.dataset.anchor;
-				event.target.closest('.file-name').classList.add('mighty-seen-already')
-
-				fileDetails.forEach(({ element, anchor }) => {
-					if (anchor === selectedAnchor) {
-						element.parentNode.classList.remove('mighty-hidden');
-					} else {
-						element.parentNode.classList.add('mighty-hidden');
-					}
-				})
-			} else if (event.target.classList.contains('folder-name')) {
-				const folderNameNode = event.target;
-				const ulListOfFolder = folderNameNode.nextElementSibling;
-
-				ulListOfFolder.classList.toggle('mighty-hidden');
-			}
-		})
-
-
-		const buttonContainer = document.createElement('div');
-		buttonContainer.setAttribute('id', 'mighty-action-buttons');
-
-		buttonContainer.insertAdjacentHTML('beforeend', `
-			<button type="button" id="mighty-needs-work-button" class="ml-2 btn btn-large btn-danger">Needs Work</button>
-			<button type="button" id="mighty-approve-button" class="ml-1 btn btn-large btn-primary">Holy Approve</button>
-		`);
-
-		document.querySelector('.gh-header-actions').insertAdjacentElement('beforeend', buttonContainer);
-
-		document.getElementById('mighty-approve-button').addEventListener('click', () => {
-			const reviewForm = document.querySelector('.pull-request-review-menu form');
-
-			const approveOption = reviewForm.querySelector('input[type="radio"][value="approve"]');
-			approveOption.click();
-
-			reviewForm.submit();
-		});
-
-		document.getElementById('mighty-needs-work-button').addEventListener('click', () => {
-			const reviewForm = document.querySelector('.pull-request-review-menu form');
-
-			const reviewCommentField = document.getElementById('pull_request_review_body');
-
-			reviewCommentField.value = 'Please fix review items.';
-
-			const needsWorkOption = reviewForm.querySelector('input[type="radio"][value="reject"]');
-			needsWorkOption.click();
-
-			reviewForm.submit();
-		})
 	}
 
-	function waitForTotalDiffLoad(callback) {
-		const interval = setInterval(() => {
-			const filesNode = document.getElementById('files');
-			const filesTabCounter = document.getElementById('files_tab_counter');
+	function initializeMightyDiffViewer() {
+		// before making our own DOM changes, let's stop watching for it
+		stopObservingDomChanges();
 
-			const numberOfChangedFiles = filesTabCounter ? parseInt(document.getElementById('files_tab_counter').textContent.trim()) : null;
-			const numberOfFileHeaders = document.querySelectorAll('.file-header[data-anchor^="diff-"]').length;
+		document.body.classList.add(CLASS_FULL_WIDTH);
+		document.body.classList.add(CLASS_ACTIVE);
 
-			if (filesNode && numberOfFileHeaders === numberOfChangedFiles) {
-				clearInterval(interval);
-				callback();
-			}
-		}, 500);
+		renderActionButtons();
+
+		renderFileTree();
+
+		// restart watching for DOM changes
+		startObservingDomChanges();
+	}
+
+	function isActualPageRelevant() {
+		const path = window.location.pathname;
+		const hasFileDiffs = document.getElementById('files');
+
+		return path.includes('pull') && path.endsWith('/files') && hasFileDiffs;
+	}
+
+	function renderOrDestroyBasedOnActualPage() {
+		if (isActualPageRelevant()) {
+			initializeMightyDiffViewer();
+		} else {
+			destroyMightyDiffViewer();
+		}
+	}
+
+	function startObservingDomChanges() {
+		observer && observer.observe(document.body, {
+			childList: true,
+			subtree: true
+		});
+	}
+
+	function stopObservingDomChanges() {
+		observer && observer.disconnect();
 	}
 
 	function init() {
-		if (window.location.pathname.endsWith('/files')) {
-			waitForTotalDiffLoad(initializeMightyDiffViewer);
-		}
+		renderOrDestroyBasedOnActualPage();
 
-		document.addEventListener('click', e => {
-			const path = window.location.pathname;
+		observer = new MutationObserver(renderOrDestroyBasedOnActualPage);
 
-			if (path.includes('pull') && path.endsWith('/files')) {
-				const fileSelector = document.getElementById('mighty-file-selector');
-
-				if (!fileSelector) {
-					waitForTotalDiffLoad(initializeMightyDiffViewer)
-				}
-			} else {
-				destroyMightyDiffViewer();
-			}
-		});
+		startObservingDomChanges();
 	}
 
 	init();

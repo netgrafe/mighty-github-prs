@@ -3,8 +3,12 @@
 	margin-bottom: 1rem;
 }
 
-.pagehead.repohead {
+.mighty-viewer-active .pagehead.repohead {
 	display: none;
+}
+
+.mighty-viewer-active .gh-header-title {
+	font-size: 1.75rem;
 }
 
 .mighty-viewer-active .js-flash-container,
@@ -13,7 +17,7 @@
 }
 
 .mighty-viewer-active .gh-header-actions {
-	min-width: 310px;
+	min-width: 320px;
 }
 
 .mighty-viewer-active  #files_bucket {
