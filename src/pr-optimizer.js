@@ -3,10 +3,13 @@
 
 	const CLASS_ACTIVE 		= 'mighty-viewer-active';
 	const CLASS_FULL_WIDTH 	= 'full-width';
+	const CLASS_COLLAPSED   = 'mighty-tree-collapsed'
 
 	const ID_ACTION_BUTTON_CONTAINER 	= 'mighty-action-buttons';
 	const ID_NEEDS_WORK_BUTTON 			= 'mighty-needs-work-button';
 	const ID_APPROVE_BUTTON				= 'mighty-approve-button';
+	const ID_TOGGLE_FILE_TREE_BUTTON	= 'mighty-toggle-file-tree-button'
+	const ID_TOGGLE_ALL_DIFF			= 'mighty-toggle-all-diff'
 
 	const ID_FILE_SELECTOR 				= 'mighty-file-selector'
 
@@ -20,6 +23,7 @@
 		if (document.body.classList.contains(CLASS_ACTIVE)) {
 			document.body.classList.remove(CLASS_ACTIVE);
 			document.body.classList.remove(CLASS_FULL_WIDTH);
+			document.body.classList.remove(CLASS_COLLAPSED);
 		}
 
 		const fileSelector = document.getElementById(ID_FILE_SELECTOR)
@@ -178,20 +182,28 @@
 			newFileSelector.setAttribute('id', ID_FILE_SELECTOR);
 
 			let fileTreeHtmlString = `
-				<header class="mighty-file-selector-header">
+				<header id="mighty-file-selector-header">
+					<button type="button" id="${ID_TOGGLE_FILE_TREE_BUTTON}">↹</button>
 					<h3>Mighty file tree</h3>
+					<a href="#" id="${ID_TOGGLE_ALL_DIFF}">See all diffs</a>
 				</header>`;
 
 			let fileDetails = [];
 
 			if (numberOfChangedFiles === numberOfFileHeaders) {
 				fileDetails = Array.from(document.querySelectorAll(SELECTOR_FILE_HEADERS)).map(element => {
+					// it seems to be not an accurate method
+					// const numberOfAddedDiffBlock = element.querySelectorAll('.block-diff-added').length;
+					// const numberOfNeutralDiffBlock = element.querySelectorAll('.block-diff-neutral').length;
+					// const numberOfDeletedDiffBlock = element.querySelectorAll('.block-diff-deleted').length;
+
 					return {
 						element,
 						anchor: element.dataset.anchor,
 						filePath: element.dataset.path,
 						fileType: element.dataset.fileType,
 						deleted: element.dataset.fileDeleted === 'true'
+						// newFile: numberOfAddedDiffBlock > 0 && numberOfDeletedDiffBlock === 0 && numberOfNeutralDiffBlock === 0
 					}
 				});
 
@@ -207,13 +219,16 @@
 					shrinkTree(fileTree[key], fileTree, key);
 				});
 
-				fileTreeHtmlString += createHtmlOfProperties(fileTree);
+				fileTreeHtmlString += `
+					<div id="mighty-file-selector-tree-container">
+						${createHtmlOfProperties(fileTree)}
+					</div>`;
 
 				state.isFileTreeFullyRendered = true;
 			} else {
 				fileTreeHtmlString += `
 					<div id="mighty-file-selector-loader-message">
-						<div id="mighty-file-loading-progress-bar" style="width: ${numberOfFileHeaders / numberOfChangedFiles * 100}%;"></div>
+						<div id="mighty-file-loading-spinner">⟳</div>
 						<p>${numberOfFileHeaders} of ${numberOfChangedFiles} file diffs has been loaded...</p>
 					</div>
 				`
@@ -243,6 +258,12 @@
 						const ulListOfFolder = folderNameNode.nextElementSibling;
 
 						ulListOfFolder.classList.toggle('mighty-hidden');
+					} else if (event.target.id === ID_TOGGLE_FILE_TREE_BUTTON) {
+						document.body.classList.toggle(CLASS_COLLAPSED);
+					} else if (event.target.id === ID_TOGGLE_ALL_DIFF) {
+						fileDetails.forEach(({ element, }) => {
+							element.parentNode.classList.remove('mighty-hidden');
+						});
 					}
 				})
 			}
