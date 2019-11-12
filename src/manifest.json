@@ -8,7 +8,15 @@
       "128": "mighty-github-icon-128x128.png",
       "192": "mighty-github-icon-192x192.png"
     },
+    "browser_action": {
+      "default_icon": {
+        "48": "mighty-github-icon-48x48.png",
+        "128": "mighty-github-icon-128x128.png",
+        "192": "mighty-github-icon-192x192.png"
+      }
+    },
     "permissions": [
+      "tabs",
       "contextMenus",
       "*://*.github.com/*"
     ],
@@ -18,6 +26,7 @@
     ],
     "background": {
       "scripts": [
+        "webext-permissions-events-polyfill.js",
         "webext-dynamic-content-scripts.js",
         "webext-domain-permission-toggle.js",
         "background.js"
