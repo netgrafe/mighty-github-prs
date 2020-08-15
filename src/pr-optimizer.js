@@ -46,7 +46,7 @@
 	function addToTree(root, parts, fullFileDetails) {
 		const nextPart = parts.shift();
 
-		if (nextPart.includes('.')) {
+		if (nextPart.includes('.') || (fullFileDetails.fileType && fullFileDetails.fileType === 'No extension')) {
 			// it's a file
 			if (root.FILES) {
 				root.FILES.push(fullFileDetails)
