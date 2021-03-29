@@ -46,7 +46,8 @@
 	function addToTree(root, parts, fullFileDetails) {
 		const nextPart = parts.shift();
 
-		if (nextPart.includes('.')) {
+		// if after shifting, the parts array is empty, we're at a leaf node
+		if (parts.length === 0) {
 			// it's a file
 			if (root.FILES) {
 				root.FILES.push(fullFileDetails)
@@ -127,7 +128,7 @@
 	}
 
 	function selectReviewOptionAndSubmit(optionValue) {
-		const reviewForm = document.querySelector('.pull-request-review-menu form');
+		const reviewForm = document.querySelector('#review-changes-modal form');
 
 		const approveOption = reviewForm.querySelector(`input[type="radio"][value="${optionValue}"]`);
 
@@ -151,6 +152,10 @@
 			document.querySelector('.gh-header-actions').insertAdjacentElement('beforeend', buttonContainer);
 
 			document.getElementById(ID_APPROVE_BUTTON).addEventListener('click', () => {
+				const reviewCommentField = document.getElementById('pull_request_review_body');
+
+				reviewCommentField.value = '';
+
 				selectReviewOptionAndSubmit('approve');
 			});
 

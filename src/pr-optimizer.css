@@ -3,7 +3,8 @@
 	margin-bottom: 1rem;
 }
 
-.mighty-viewer-active .pagehead.repohead {
+/* remove the repository details and navigation on files diff view - repo name, watch/star/fork buttons and Code/Pull Requests/Settings etc tabs */
+.mighty-viewer-active #js-repo-pjax-container > .bg-gray-light.hide-full-screen{
 	display: none;
 }
 
@@ -33,6 +34,10 @@
 
 .mighty-viewer-active .mighty-hidden {
 	display: none !important;
+}
+
+.mighty-viewer-active .file-header {
+	background-color: #fcffb4;
 }
 
 #mighty-file-selector {
